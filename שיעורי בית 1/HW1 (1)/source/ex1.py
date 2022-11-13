@@ -117,6 +117,8 @@ class TaxiProblem(search.Problem):
         action in the given state. The action must be one of
         self.actions(state)."""
         state = json.loads(state)
+        action = [list(action)]
+        # print(action[0])
         for act in action:
             verb = act[0]
             taxi_name = act[1]
@@ -138,8 +140,7 @@ class TaxiProblem(search.Problem):
 
             elif verb == "refuel":
                 state["taxis"][taxi_name]["fuel"] = state["taxis"][taxi_name]["initFuel"]
-
-            return json.dumps(state)
+        return json.dumps(state)
 
 
 
@@ -147,6 +148,12 @@ class TaxiProblem(search.Problem):
     def goal_test(self, state):
         """ Given a state, checks if this is the goal state.
          Returns True if it is, False otherwise."""
+        state = json.loads(state)
+        for passenger in state["passengers"].keys():
+            if state["passengers"][passenger]["location"] != state["passengers"][passenger]["destination"]:
+                return False
+        return True
+
 
     def h(self, node):
         """ This is the heuristic. It gets a node (not a state,
