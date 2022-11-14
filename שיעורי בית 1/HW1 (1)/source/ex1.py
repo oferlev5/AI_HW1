@@ -51,7 +51,6 @@ class TaxiProblem(search.Problem):
         search.Problem.__init__(self, initial) creates the root node"""
         " 'we need to create frist node with state and deliver goal"
 
-        # initial = initial[0]
         for key in initial["taxis"].keys():
             initial["taxis"][key]['currCap'] = 0
             initial["taxis"][key]['initFuel'] = initial["taxis"][key]["fuel"]
@@ -68,7 +67,6 @@ class TaxiProblem(search.Problem):
         state = json.loads(state)
         actions_dict = {}
         lenrow, lencol = len(state["map"]), len(state["map"][0])
-
         for key in state["taxis"].keys():
             actions_dict[key] = []
             ## possible moves
@@ -76,7 +74,7 @@ class TaxiProblem(search.Problem):
             moves = possible_moves(t_location, lenrow, lencol)
             for move in moves:
                 tile_type = state["map"][move[0]][move[1]]
-                if tile_type != 'I':
+                if tile_type != 'I' and state["taxis"][key]['fuel'] > 0:
                     to_add = ('move', key, move)
                     actions_dict[key].append(to_add)
 
@@ -105,26 +103,47 @@ class TaxiProblem(search.Problem):
             to_add = ("wait", key)
             actions_dict[key].append(to_add)
 
-            combined_actions = []
-            for key in actions_dict.keys():
-                combined_actions.append(actions_dict[key])
+        combined_actions = []
+        for key in actions_dict.keys():
+            combined_actions.append(actions_dict[key])
 
-            if len(actions_dict.keys()) == 1:
-                name_taxi = list(actions_dict.keys())[0]
-                return tuple(actions_dict[name_taxi])
+        if len(actions_dict.keys()) == 1:
+            name_taxi = list(actions_dict.keys())[0]
+            return tuple(actions_dict[name_taxi])
 
-            else:
-                ## need to check this!!!
-                ## check for no conflict in tiles
-                return tuple(itertools.product(*combined_actions))
+        else:
+            ## need to check this!!!
+            ## check for no conflict in tiles
+            prod_actions = list(itertools.product(*combined_actions))
+            final_prod_actions = []
+            num_taxis = len(state["taxis"].keys())
+            for i in range(len(prod_actions)):
+                loc_set = set()
+                for j in range (num_taxis):
+                    verb = prod_actions[i][j][0]
+                    if verb == "move":
+                        loc_set.add(tuple(prod_actions[i][j][2]))
+                    elif verb == "wait":
+                        taxi_name = prod_actions[i][j][1]
+                        taxi_loc = state["taxis"][taxi_name]["location"]
+                        loc_set.add(tuple(taxi_loc))
+                if len(loc_set) == num_taxis:
+                    final_prod_actions.append(prod_actions[i])
+            return tuple(final_prod_actions)
+
+
+
+
+
 
     def result(self, state, action):
         """Return the state that results from executing the given
         action in the given state. The action must be one of
         self.actions(state)."""
         state = json.loads(state)
-        action = [list(action)]
-        # print(action[0])
+        action = list(action) #[]
+
+
         for act in action:
             verb = act[0]
             taxi_name = act[1]
@@ -144,8 +163,9 @@ class TaxiProblem(search.Problem):
                 state["passengers"][passenger]["onTaxi"] = "goal"
                 state["passengers"][passenger]["location"] = state["taxis"][taxi_name]["location"]
 
-            elif verb == "refuel":
+            elif verb == 'refuel':
                 state["taxis"][taxi_name]["fuel"] = state["taxis"][taxi_name]["initFuel"]
+        print(state)
         return json.dumps(state)
 
     def goal_test(self, state):
@@ -161,7 +181,7 @@ class TaxiProblem(search.Problem):
         """ This is the heuristic. It gets a node (not a state,
         state can be accessed via node.state)
         and returns a goal distance estimate"""
-        print(self.h_2(node))
+        # print(self.h_2(node))
         return self.h_2(node)
 
     def h_1(self, node):
