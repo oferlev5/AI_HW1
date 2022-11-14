@@ -1,5 +1,5 @@
 import json
-
+import time
 import search
 import random
 import math
@@ -34,6 +34,12 @@ def possible_moves(loc, lenrow, lencol):
         return [(i - 1, j), (i, 1), (i + 1, j)]
     elif j == lencol:
         return [(i - 1, j), (i, j - 1), (i + 1, j)]
+
+
+def man_distance(point1,point2):
+
+    return abs(point1[0]-point2[0])+ abs(point1[1]-point2[1])
+
 
 
 class TaxiProblem(search.Problem):
@@ -142,9 +148,6 @@ class TaxiProblem(search.Problem):
                 state["taxis"][taxi_name]["fuel"] = state["taxis"][taxi_name]["initFuel"]
         return json.dumps(state)
 
-
-
-
     def goal_test(self, state):
         """ Given a state, checks if this is the goal state.
          Returns True if it is, False otherwise."""
@@ -154,22 +157,49 @@ class TaxiProblem(search.Problem):
                 return False
         return True
 
-
     def h(self, node):
         """ This is the heuristic. It gets a node (not a state,
         state can be accessed via node.state)
         and returns a goal distance estimate"""
-        return 0
+        print(self.h_2(node))
+        return self.h_2(node)
 
     def h_1(self, node):
         """
         This is a simple heuristic
         """
+        state = json.loads(node.state)
+        unpicked = 0
+        not_deliverd = 0
+        for key in state["passengers"].keys():
+            if state["passengers"][key]["onTaxi"] is None:
+                unpicked+=1
+            elif state["passengers"][key]["onTaxi"] != 'goal':
+                not_deliverd+=1
+        num_taxis = len(state["taxis"].keys())
+        return (unpicked*2 + not_deliverd)/ num_taxis
+
 
     def h_2(self, node):
         """
         This is a slightly more sophisticated Manhattan heuristic
         """
+        state = json.loads(node.state)
+        D = 0
+        T = 0
+        for key in state["passengers"].keys():
+            if state["passengers"][key]["onTaxi"] is None:
+                loc = state["passengers"][key]["location"]
+                dest = state["passengers"][key]["destination"]
+                D+= man_distance(loc, dest)
+            elif state["passengers"][key]["onTaxi"] != 'goal':
+                taxi_name = state["passengers"][key]["onTaxi"]
+                taxi_loc = state["taxis"][taxi_name]["location"]
+                dest = state["passengers"][key]["destination"]
+                T += man_distance(taxi_loc, dest)
+        num_taxis = len(state["taxis"].keys())
+        return (D+T) / num_taxis
+
 
     """Feel free to add your own functions
     (-2, -2, None) means there was a timeout"""
