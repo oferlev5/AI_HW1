@@ -36,10 +36,26 @@ def possible_moves(loc, lenrow, lencol):
         return [(i - 1, j), (i, j - 1), (i + 1, j)]
 
 
-def man_distance(point1,point2):
+def man_distance(point1, point2):
+    return abs(point1[0] - point2[0]) + abs(point1[1] - point2[1])
 
-    return abs(point1[0]-point2[0])+ abs(point1[1]-point2[1])
 
+def is_problem_solvable(dic1):
+    set_places = set()
+    mat = dic1['map']
+    for i in range(len(dic1['map'])):
+        for j in range(len(dic1['map'][0])):
+            if mat[i][j] == 'I':
+                set_places.add((i, j))
+    for tax_name in dic1['taxis'].keys():
+        if dic1['taxis'][tax_name]['location'] in set_places:
+            return False
+    for passenger in dic1['passengers'].keys():
+        if dic1['passengers'][passenger]['location'] in set_places:
+            return False
+        if dic1['passengers'][passenger]['destination'] in set_places:
+            return False
+    return True
 
 
 class TaxiProblem(search.Problem):
@@ -50,6 +66,8 @@ class TaxiProblem(search.Problem):
         You should change the initial to your own representation.
         search.Problem.__init__(self, initial) creates the root node"""
         " 'we need to create frist node with state and deliver goal"
+        is_solvable = is_problem_solvable(initial)
+        if not is_solvable:
 
         for key in initial["taxis"].keys():
             initial["taxis"][key]['currCap'] = 0
@@ -86,7 +104,7 @@ class TaxiProblem(search.Problem):
                 person_location = state["passengers"][person]["location"]
                 person_dest = state["passengers"][person]["destination"]
                 person_on_taxi = state["passengers"][person]["onTaxi"]
-                if person_location == t_location and taxi_curr_capacity + 1 <= taxi_capacity and person_on_taxi != key:
+                if person_location == t_location and taxi_curr_capacity + 1 <= taxi_capacity and person_on_taxi is None:
                     to_add = ('pick up', key, person)
                     actions_dict[key].append(to_add)
                 if person_on_taxi == key and person_dest == t_location:
@@ -106,7 +124,6 @@ class TaxiProblem(search.Problem):
         combined_actions = []
         for key in actions_dict.keys():
             combined_actions.append(actions_dict[key])
-
         if len(actions_dict.keys()) == 1:
             name_taxi = list(actions_dict.keys())[0]
             return tuple(actions_dict[name_taxi])
@@ -119,30 +136,29 @@ class TaxiProblem(search.Problem):
             num_taxis = len(state["taxis"].keys())
             for i in range(len(prod_actions)):
                 loc_set = set()
-                for j in range (num_taxis):
+                for j in range(num_taxis):
                     verb = prod_actions[i][j][0]
                     if verb == "move":
                         loc_set.add(tuple(prod_actions[i][j][2]))
-                    elif verb == "wait":
+                    else:
                         taxi_name = prod_actions[i][j][1]
                         taxi_loc = state["taxis"][taxi_name]["location"]
                         loc_set.add(tuple(taxi_loc))
                 if len(loc_set) == num_taxis:
                     final_prod_actions.append(prod_actions[i])
+
             return tuple(final_prod_actions)
-
-
-
-
-
 
     def result(self, state, action):
         """Return the state that results from executing the given
         action in the given state. The action must be one of
         self.actions(state)."""
         state = json.loads(state)
-        action = list(action) #[]
-
+        num_taxis = len(state["taxis"].keys())
+        if num_taxis == 1:
+            action = [list(action)]
+        else:
+            action = list(action)  # []
 
         for act in action:
             verb = act[0]
@@ -156,6 +172,7 @@ class TaxiProblem(search.Problem):
                 state["taxis"][taxi_name]["currCap"] += 1
                 passenger = act[2]
                 state["passengers"][passenger]["onTaxi"] = taxi_name
+                # state["passengers"][passenger]["location"] = "onTaxi"
 
             elif verb == 'drop off':
                 passenger = act[2]
@@ -165,7 +182,7 @@ class TaxiProblem(search.Problem):
 
             elif verb == 'refuel':
                 state["taxis"][taxi_name]["fuel"] = state["taxis"][taxi_name]["initFuel"]
-        print(state)
+        # print(state)
         return json.dumps(state)
 
     def goal_test(self, state):
@@ -193,12 +210,11 @@ class TaxiProblem(search.Problem):
         not_deliverd = 0
         for key in state["passengers"].keys():
             if state["passengers"][key]["onTaxi"] is None:
-                unpicked+=1
+                unpicked += 1
             elif state["passengers"][key]["onTaxi"] != 'goal':
-                not_deliverd+=1
+                not_deliverd += 1
         num_taxis = len(state["taxis"].keys())
-        return (unpicked*2 + not_deliverd)/ num_taxis
-
+        return (unpicked * 2 + not_deliverd) / num_taxis
 
     def h_2(self, node):
         """
@@ -211,15 +227,14 @@ class TaxiProblem(search.Problem):
             if state["passengers"][key]["onTaxi"] is None:
                 loc = state["passengers"][key]["location"]
                 dest = state["passengers"][key]["destination"]
-                D+= man_distance(loc, dest)
+                D += man_distance(loc, dest)
             elif state["passengers"][key]["onTaxi"] != 'goal':
                 taxi_name = state["passengers"][key]["onTaxi"]
                 taxi_loc = state["taxis"][taxi_name]["location"]
                 dest = state["passengers"][key]["destination"]
                 T += man_distance(taxi_loc, dest)
         num_taxis = len(state["taxis"].keys())
-        return (D+T) / num_taxis
-
+        return (D + T) / num_taxis
 
     """Feel free to add your own functions
     (-2, -2, None) means there was a timeout"""

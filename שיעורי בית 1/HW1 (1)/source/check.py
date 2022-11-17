@@ -60,7 +60,7 @@ def solve_problems(problems):
         except Exception as e:
             print("Error creating problem: ", e)
             return None
-        timeout = 60
+        timeout = 600
         result = check_problem(p, (lambda p: search.astar_search(p, p.h)), timeout)
         print("A*: ", result)
         if result[2] != None:
@@ -72,40 +72,20 @@ def main():
     print(ex1.ids)
     """Here goes the input you want to check"""
     problems = [
-
         {
-            "map": [['P', 'P', 'P', 'P'],
-                    ['P', 'P', 'P', 'P'],
-                    ['P', 'I', 'G', 'P'],
-                    ['P', 'P', 'P', 'P'], ],
-            "taxis": {'taxi 1': {"location": (3, 3),
-                                 "fuel": 15,
-                                 "capacity": 2},
-                      'taxi 2':{ "location": (2,3),
-                                 "fuel": 15,
-                                 "capacity": 2}},
-            "passengers": {'Yossi': {"location": (0, 0),
-                                     "destination": (2, 3)},
-                           'Moshe': {"location": (3, 1),
-                                     "destination": (0, 0)}
-                           }
-        },
+            'map': [['P', 'P', 'P', 'I', 'P', 'P', 'P'],
+                    ['P', 'I', 'P', 'P', 'P', 'P', 'I'],
+                    ['P', 'P', 'I', 'P', 'P', 'I', 'P'],
+                    ['P', 'G', 'P', 'I', 'P', 'G', 'P'],
+                    ['P', 'P', 'P', 'P', 'P', 'I', 'P'],
+                    ['P', 'P', 'G', 'I', 'P', 'P', 'P']],
+            'taxis': {'taxi 1': {'location': (5, 6), 'fuel': 21, 'capacity': 3}},
+            'passengers': {'Omer': {'location': (1, 5), 'destination': (2, 2)},
+                           'Roee': {'location': (2, 1), 'destination': (4, 3)},
+                           'Dana': {'location': (4, 2), 'destination': (5, 2)},
+                           'Efrat': {'location': (5, 6), 'destination': (2, 3)}},
+        }
 
-        {
-            "map": [['P', 'P', 'I', 'P'],
-                    ['P', 'P', 'P', 'P'],
-                    ['P', 'I', 'G', 'P'],
-                    ['P', 'P', 'P', 'P'], ],
-            "taxis": {'taxi 1': {"location": (3, 3),
-                                 "fuel": 15,
-                                 "capacity": 2}},
-            "passengers": {'Dana': {"location": (0, 0),
-                                    "destination": (2, 3)},
-                           'Yael': {"location": (3, 1),
-                                    "destination": (0, 0)}
-                           }
-
-        },
     ]
     solve_problems(problems)
 
