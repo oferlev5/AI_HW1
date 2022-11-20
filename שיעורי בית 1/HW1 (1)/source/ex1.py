@@ -40,22 +40,7 @@ def man_distance(point1, point2):
     return abs(point1[0] - point2[0]) + abs(point1[1] - point2[1])
 
 
-def is_problem_solvable(dic1):
-    set_places = set()
-    mat = dic1['map']
-    for i in range(len(dic1['map'])):
-        for j in range(len(dic1['map'][0])):
-            if mat[i][j] == 'I':
-                set_places.add((i, j))
-    for tax_name in dic1['taxis'].keys():
-        if dic1['taxis'][tax_name]['location'] in set_places:
-            return False
-    for passenger in dic1['passengers'].keys():
-        if dic1['passengers'][passenger]['location'] in set_places:
-            return False
-        if dic1['passengers'][passenger]['destination'] in set_places:
-            return False
-    return True
+
 
 
 class TaxiProblem(search.Problem):
@@ -66,8 +51,6 @@ class TaxiProblem(search.Problem):
         You should change the initial to your own representation.
         search.Problem.__init__(self, initial) creates the root node"""
         " 'we need to create frist node with state and deliver goal"
-        is_solvable = is_problem_solvable(initial)
-        if not is_solvable:
 
         for key in initial["taxis"].keys():
             initial["taxis"][key]['currCap'] = 0
@@ -198,8 +181,26 @@ class TaxiProblem(search.Problem):
         """ This is the heuristic. It gets a node (not a state,
         state can be accessed via node.state)
         and returns a goal distance estimate"""
-        # print(self.h_2(node))
-        return self.h_2(node)
+        state = json.loads(node.state)
+        D = 0
+        T = 0
+        h = 0
+        for key in state["passengers"].keys():
+            if state["passengers"][key]["onTaxi"] is None:
+                h+=2
+                loc = state["passengers"][key]["location"]
+                dest = state["passengers"][key]["destination"]
+                D += man_distance(loc, dest)
+            elif state["passengers"][key]["onTaxi"] != 'goal':
+                h+=1
+                taxi_name = state["passengers"][key]["onTaxi"]
+                taxi_loc = state["taxis"][taxi_name]["location"]
+                dest = state["passengers"][key]["destination"]
+                T += man_distance(taxi_loc, dest)
+        num_taxis = len(state["taxis"].keys())
+        h= (h+D + T)/ num_taxis
+        return h
+
 
     def h_1(self, node):
         """
