@@ -191,13 +191,15 @@ class TaxiProblem(search.Problem):
         state = json.loads(node.state)
         D = 0
         T = 0
-        h = 0
+        u= 0
         dis_from_taxi = 0
         taxis_locations = set()
-        cap = 0
+        cum_dist_from_gas = 0
+        picked_not_deliverd = 0
+        max_cap = 0
         num_taxis = len(state["taxis"].keys())
         for key in state["taxis"].keys():
-            cap += state["taxis"][key]["capacity"]
+            max_cap = max(max_cap,state["taxis"][key]["capacity"])
             taxi_location = state["taxis"][key]["location"]
             taxis_locations.add(tuple(taxi_location))
             if state["taxis"][key]["currCap"] != 0:
@@ -211,14 +213,13 @@ class TaxiProblem(search.Problem):
                     for station in state["Gas_Stations"]:
                         min_dis_from_gas = min(man_distance(taxi_location, station), min_dis_from_gas)
                     if min_dis_from_gas < state["taxis"][key]["fuel"]:
-                        h+= float("-inf")
+                        cum_dist_from_gas += float("inf")
                     else:
-                        h += min_dis_from_gas + 1
-
+                        cum_dist_from_gas += min_dis_from_gas + 1
 
         for key in state["passengers"].keys():
             if state["passengers"][key]["onTaxi"] is None:
-                h += 2
+                u += 2
                 loc = state["passengers"][key]["location"]
                 dest = state["passengers"][key]["destination"]
                 D += man_distance(loc, dest)
@@ -228,17 +229,14 @@ class TaxiProblem(search.Problem):
                 dis_from_taxi += min_val
 
             elif state["passengers"][key]["onTaxi"] != 'goal':
-                h += 1
+                picked_not_deliverd +=1
+                u += 1
                 taxi_name = state["passengers"][key]["onTaxi"]
                 taxi_loc = state["taxis"][taxi_name]["location"]
                 dest = state["passengers"][key]["destination"]
                 T += man_distance(taxi_loc, dest)
 
-        h = (h + D + T + dis_from_taxi) / num_taxis
-        # print(h)
-        # if h > 13:
-        #     print(state)
-        #     print(h, D, T, dis_from_taxi)
+        h = (u + D + T + dis_from_taxi + cum_dist_from_gas) / max(max_cap, num_taxis)
         return h
 
     def h_1(self, node):
